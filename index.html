@@ -1,210 +1,209 @@
 <style>
-body, html {
-background-color: rgb(40, 44, 52);
-color: white;
-}
-
+    body, html {
+        background-color: rgb(40, 44, 52);
+        color: white;
+    }
 </style>
 
 <script>
 
 function isDigit(character) {
-	let charCode = character.charCodeAt(0);
+    let charCode = character.charCodeAt(0);
     return charCode >= "0".charCodeAt(0) && charCode <= "9".charCodeAt(0);
 }
 
 class Scanner {
-	tokens = [];
+    tokens = [];
     position = 0;
-    
-    
+
+
     constructor(expression) {
-    	this.expression = expression;
-	}
-    
-    atEnd() {
-    	return this.position >= this.expression.length;
+        this.expression = expression;
     }
-    
+
+    atEnd() {
+        return this.position >= this.expression.length;
+    }
+
     run() {
-    	while (!this.atEnd()) {
-        	let current = this.expression[this.position];
-            
+        while (!this.atEnd()) {
+            let current = this.expression[this.position];
+
             switch (current) {
-            	case "(":
-                	this.tokens.push({
-                    	type: TokenType.OPEN_BRACKET
+                case "(":
+                    this.tokens.push({
+                        type: TokenType.OPEN_BRACKET
                     });
                     break;
-                    
-               	case ")":
-                	this.tokens.push({
-                    	type: TokenType.CLOSE_BRACKET
+
+                case ")":
+                    this.tokens.push({
+                        type: TokenType.CLOSE_BRACKET
                     });
                     break;
-                    
+
                 case "+":
-                	this.tokens.push({
-                    	type: TokenType.PLUS
+                    this.tokens.push({
+                        type: TokenType.PLUS
                     });
                     break;
-             
-				case "-":
-                	this.tokens.push({
-                    	type: TokenType.MINUS
+
+                case "-":
+                    this.tokens.push({
+                        type: TokenType.MINUS
                     });
                     break;
-                  
+
                 case "*":
-                	this.tokens.push({
-                    	type: TokenType.ASTERISK
+                    this.tokens.push({
+                        type: TokenType.ASTERISK
                     });
                     break;
-             
-				case "/":
-                	this.tokens.push({
-                    	type: TokenType.SLASH
+
+                case "/":
+                    this.tokens.push({
+                        type: TokenType.SLASH
                     });
                     break;
-                
+
                 default:
-                	if (isDigit(current)) {
-                    	let start = this.position;
+                    if (isDigit(current)) {
+                        let start = this.position;
                         while (!this.atEnd()) {
-                        	if (!isDigit(current)) break;
+                            if (!isDigit(current)) break;
                             current = this.expression[++this.position];
                         }
                         this.position--;
 
                         this.tokens.push({
-                        	type: TokenType.INTEGER_LITERAL,
+                            type: TokenType.INTEGER_LITERAL,
                             literal: parseInt(this.expression.substring(start, this.position + 1))
                         });
                     } else {
-                		document.write(`Unexpected character "${current}" at position ${this.position}.<br>`);
+                        document.write(`Unexpected character "${current}" at position ${this.position}.<br>`);
                     }
-                	break;
+                    break;
             }
-            
+
             this.position++;
         }
     }
-    
+
     getTokens() {
-    	return this.tokens;
+        return this.tokens;
     }
 }
 
 class Parser {
     position = 0;
-    
+
     constructor(tokens) {
-    	this.tokens = tokens;
+        this.tokens = tokens;
     }
-    
+
     atEnd() {
-    	return this.position >= this.tokens.length;
+        return this.position >= this.tokens.length;
     }
-    
+
     advance() {
-    	if (!this.atEnd()) this.current = this.tokens[++this.position];
+        if (!this.atEnd()) this.current = this.tokens[++this.position];
     }
-    
+
     match(tokenType) {
-    	if (this.atEnd()) return false;
-        
-    	if (this.current.type == tokenType) {
-			this.advance();
+        if (this.atEnd()) return false;
+
+        if (this.current.type == tokenType) {
+            this.advance();
             return true;
-        }	
-    	return false;
+        }
+        return false;
     }
-    
+
     check(tokenType) {
-    	if (this.atEnd()) return false;
-    	return this.current.type == tokenType;
+        if (this.atEnd()) return false;
+        return this.current.type == tokenType;
     }
-    
+
     consume(tokenType, error) {
-    	if (this.check(tokenType)) {
-        	this.advance();
+        if (this.check(tokenType)) {
+            this.advance();
             return;
         }
-        
+
         throw error;
     }
-    
+
     previous() {
-    	return this.tokens[this.position - 1];
+        return this.tokens[this.position - 1];
     }
-    
+
     run() {
-    	this.current = this.tokens[this.position];
-        
-    	return this.parseExpression();
+        this.current = this.tokens[this.position];
+
+        return this.parseExpression();
     }
-    
+
     parseExpression() {
-		return this.parseTerm();
+        return this.parseTerm();
     }
-    
+
     parseTerm() {
-    	let expression = this.parseFactor();
-        
+        let expression = this.parseFactor();
+
         while (this.match(TokenType.PLUS) || this.match(TokenType.MINUS)) {
-        	let operator = this.previous().type;
+            let operator = this.previous().type;
             let right = this.parseFactor();
-        	
+
             expression = {
-            	type: ExpressionType.BINARY,
+                type: ExpressionType.BINARY,
                 operator,
                 left: expression,
                 right
             };
         }
-        
+
         return expression;
     }
-    
+
     parseFactor() {
-    	let expression = this.parsePrimary();
-        
+        let expression = this.parsePrimary();
+
         while (this.match(TokenType.ASTERISK) || this.match(TokenType.SLASH)) {
-        	let operator = this.previous().type;
+            let operator = this.previous().type;
             let right = this.parsePrimary();
-        	
+
             expression = {
-            	type: ExpressionType.BINARY,
+                type: ExpressionType.BINARY,
                 operator,
                 left: expression,
                 right
             };
         }
-        
+
         return expression;
     }
-    
+
     parsePrimary() {
-    	if (this.match(TokenType.INTEGER_LITERAL)) {
-        	return {
-            	type: ExpressionType.LITERAL,
+        if (this.match(TokenType.INTEGER_LITERAL)) {
+            return {
+                type: ExpressionType.LITERAL,
                 literal: this.previous().literal
             };
         }
-        
+
         if (this.match(TokenType.OPEN_BRACKET)) {
-        	let expression = this.parseExpression();
+            let expression = this.parseExpression();
             this.consume(TokenType.CLOSE_BRACKET, `Expected ")" at position ${this.position}.`);
             return expression;
         }
-    }  
+    }
 }
 
 function calculate(node) {
-	if (node.type == "LITERAL") {
-    	return node.literal;
+    if (node.type == "LITERAL") {
+        return node.literal;
     } else if (node.type == "BINARY") {
-    	if (node.operator == "PLUS") return calculate(node.left) + calculate(node.right);
+        if (node.operator == "PLUS") return calculate(node.left) + calculate(node.right);
         if (node.operator == "MINUS") return calculate(node.left) - calculate(node.right);
         if (node.operator == "ASTERISK") return calculate(node.left) * calculate(node.right);
         if (node.operator == "SLASH") return calculate(node.left) / calculate(node.right);
@@ -212,7 +211,7 @@ function calculate(node) {
 }
 
 const TokenType = {
-	OPEN_BRACKET: "OPEN_BRACKET",
+    OPEN_BRACKET: "OPEN_BRACKET",
     CLOSE_BRACKET: "CLOSE_BRACKET",
     PLUS: "PLUS",
     MINUS: "MINUS",
@@ -222,7 +221,7 @@ const TokenType = {
 };
 
 const ExpressionType = {
-	LITERAL: "LITERAL",
+    LITERAL: "LITERAL",
     BINARY: "BINARY"
 };
 
